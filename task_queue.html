@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Priority Task Queue</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.35);
+        border-radius: 999px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.55);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <div class="flex h-screen">
+      <aside class="w-64 bg-slate-900 border-r border-slate-800 p-6 flex flex-col">
+        <div class="mb-10">
+          <h1 class="text-2xl font-semibold tracking-tight">Task Queue</h1>
+          <p class="text-sm text-slate-400 mt-2">
+            Minimal priority manager for the focused CS student.
+          </p>
+        </div>
+        <nav class="space-y-2">
+          <button
+            data-target="addTaskView"
+            class="nav-link w-full text-left px-3 py-2 rounded-md bg-slate-800 text-slate-100 transition-colors hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            Add Task
+          </button>
+          <button
+            data-target="futureView"
+            class="nav-link w-full text-left px-3 py-2 rounded-md text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            Future Queue
+          </button>
+          <button
+            data-target="historyView"
+            class="nav-link w-full text-left px-3 py-2 rounded-md text-slate-300 transition-colors hover:bg-slate-800 hover:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            History Log
+          </button>
+        </nav>
+        <div class="mt-auto text-xs text-slate-500">
+          Gemini-powered advisor • Local storage persistence
+        </div>
+      </aside>
+      <main class="flex-1 flex">
+        <section class="w-[70%] border-r border-slate-800 p-8 overflow-y-auto">
+          <div id="addTaskView" class="view space-y-6">
+            <header>
+              <h2 class="text-xl font-semibold">Add Task</h2>
+              <p class="text-sm text-slate-400">
+                Capture a new task and set its priority.
+              </p>
+            </header>
+            <form id="taskForm" class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-300 mb-1"
+                  >Task Name</label
+                >
+                <input
+                  type="text"
+                  id="taskName"
+                  required
+                  placeholder="Build graph algorithms simulator"
+                  class="w-full bg-slate-900 border border-slate-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-300 mb-1"
+                    >Priority</label
+                  >
+                  <select
+                    id="taskPriority"
+                    required
+                    class="w-full bg-slate-900 border border-slate-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-300 mb-1"
+                    >Due Date</label
+                  >
+                  <input
+                    type="date"
+                    id="taskDueDate"
+                    required
+                    class="w-full bg-slate-900 border border-slate-800 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+              <button
+                type="submit"
+                class="inline-flex items-center justify-center rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              >
+                Add to Future Queue
+              </button>
+            </form>
+          </div>
+
+          <div id="futureView" class="view hidden space-y-6">
+            <header>
+              <h2 class="text-xl font-semibold">Future Queue</h2>
+              <p class="text-sm text-slate-400">
+                Tasks sorted by priority and urgency.
+              </p>
+            </header>
+            <div id="futureList" class="space-y-4"></div>
+            <p
+              id="futureEmptyState"
+              class="hidden text-sm text-slate-500 italic"
+            >
+              No future tasks queued. Add one to get started.
+            </p>
+          </div>
+
+          <div id="historyView" class="view hidden space-y-6">
+            <header>
+              <h2 class="text-xl font-semibold">History Log</h2>
+              <p class="text-sm text-slate-400">
+                Completed tasks with completion dates.
+              </p>
+            </header>
+            <div id="historyList" class="space-y-4"></div>
+            <p
+              id="historyEmptyState"
+              class="hidden text-sm text-slate-500 italic"
+            >
+              Nothing completed yet. Close a task from the Future Queue to
+              populate this log.
+            </p>
+          </div>
+        </section>
+
+        <aside class="w-[30%] p-8 bg-slate-950">
+          <div class="h-full flex flex-col border border-slate-800 rounded-2xl bg-slate-900/60 backdrop-blur">
+            <header class="px-6 py-4 border-b border-slate-800">
+              <h2 class="text-lg font-semibold">AI Task Advisor</h2>
+              <p class="text-xs text-slate-400 mt-1">
+                Powered by Gemini 2.5 Flash • Context-aware recommendations.
+              </p>
+            </header>
+            <div id="chatMessages" class="flex-1 overflow-y-auto px-6 py-4 space-y-4 text-sm">
+              <div class="bg-slate-800/60 border border-slate-700 rounded-xl px-4 py-3 text-slate-200">
+                Hey! Add a few tasks and ask me which one to tackle next.
+              </div>
+            </div>
+            <form id="chatForm" class="px-6 py-4 border-t border-slate-800 space-y-3">
+              <textarea
+                id="chatInput"
+                rows="2"
+                placeholder="Ask your task coach..."
+                class="w-full resize-none bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              ></textarea>
+              <button
+                type="submit"
+                class="w-full inline-flex items-center justify-center rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              >
+                Ask Advisor
+              </button>
+            </form>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script>
+      (function () {
+        const STORAGE_KEY = "taskQueueTasks";
+        const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY";
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+        const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+        let tasks = [];
+
+        const navButtons = document.querySelectorAll(".nav-link");
+        const views = document.querySelectorAll(".view");
+        const futureList = document.getElementById("futureList");
+        const historyList = document.getElementById("historyList");
+        const futureEmptyState = document.getElementById("futureEmptyState");
+        const historyEmptyState = document.getElementById("historyEmptyState");
+        const chatMessages = document.getElementById("chatMessages");
+        const chatForm = document.getElementById("chatForm");
+        const chatInput = document.getElementById("chatInput");
+
+        function loadTasks() {
+          try {
+            const raw = window.localStorage.getItem(STORAGE_KEY);
+            tasks = Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : [];
+          } catch (error) {
+            tasks = [];
+          }
+        }
+
+        function saveTasks() {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+        }
+
+        function hashString(str) {
+          let hash = 0;
+          for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+          }
+          return Math.abs(hash);
+        }
+
+        function taskAccent(id) {
+          const baseHue = hashString(id) % 360;
+          return `hsl(${baseHue}, 85%, 65%)`;
+        }
+
+        function sortFutureTasks(list) {
+          const priorityWeight = { High: 0, Medium: 1, Low: 2 };
+          return [...list].sort((a, b) => {
+            const priorityDelta =
+              (priorityWeight[a.priority] ?? 3) -
+              (priorityWeight[b.priority] ?? 3);
+            if (priorityDelta !== 0) return priorityDelta;
+            const aTime = new Date(a.dueDate).getTime();
+            const bTime = new Date(b.dueDate).getTime();
+            return aTime - bTime;
+          });
+        }
+
+        function renderFutureTasks() {
+          futureList.innerHTML = "";
+          const futureTasks = sortFutureTasks(
+            tasks.filter((task) => task.status === "Future")
+          );
+          if (!futureTasks.length) {
+            futureEmptyState.classList.remove("hidden");
+            return;
+          }
+          futureEmptyState.classList.add("hidden");
+          futureTasks.forEach((task) => {
+            const item = document.createElement("div");
+            item.className =
+              "group relative border border-slate-800 bg-slate-900/80 rounded-xl p-4 transition-transform hover:-translate-y-0.5 hover:shadow-lg hover:shadow-emerald-500/10";
+            item.style.borderLeft = `6px solid ${taskAccent(task.id)}`;
+
+            item.innerHTML = `
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm uppercase tracking-wide text-slate-400">${task.priority} Priority</p>
+                  <h3 class="text-lg font-semibold text-slate-100">${task.name}</h3>
+                  <p class="text-xs text-slate-400 mt-1">Due ${task.dueDate}</p>
+                </div>
+                <button
+                  data-action="complete"
+                  data-id="${task.id}"
+                  class="shrink-0 rounded-lg bg-emerald-500 px-3 py-1.5 text-sm font-semibold text-slate-950 transition-colors hover:bg-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+                >
+                  Mark Complete
+                </button>
+              </div>
+            `;
+
+            futureList.appendChild(item);
+          });
+        }
+
+        function renderHistoryTasks() {
+          historyList.innerHTML = "";
+          const historyTasks = tasks.filter((task) => task.status === "Complete");
+          if (!historyTasks.length) {
+            historyEmptyState.classList.remove("hidden");
+            return;
+          }
+          historyEmptyState.classList.add("hidden");
+          historyTasks
+            .sort(
+              (a, b) =>
+                new Date(b.completionDate).getTime() -
+                new Date(a.completionDate).getTime()
+            )
+            .forEach((task) => {
+              const item = document.createElement("div");
+              item.className =
+                "relative border border-slate-800 bg-slate-900/60 rounded-xl p-4";
+              item.style.borderLeft = `6px solid ${taskAccent(task.id)}`;
+              item.innerHTML = `
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 class="text-lg font-semibold text-slate-100">${task.name}</h3>
+                    <p class="text-xs text-slate-400 mt-1">Due ${task.dueDate}</p>
+                    <p class="text-xs text-slate-500">Completed ${task.completionDate}</p>
+                  </div>
+                  <button
+                    data-action="delete"
+                    data-id="${task.id}"
+                    class="shrink-0 rounded-lg border border-slate-700 px-3 py-1.5 text-sm font-semibold text-slate-300 transition-colors hover:border-rose-400 hover:text-rose-300 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                  >
+                    Delete
+                  </button>
+                </div>
+              `;
+              historyList.appendChild(item);
+            });
+        }
+
+        function refreshViews() {
+          renderFutureTasks();
+          renderHistoryTasks();
+          saveTasks();
+        }
+
+        function switchView(targetId) {
+          views.forEach((view) => {
+            view.classList.toggle("hidden", view.id !== targetId);
+          });
+          navButtons.forEach((button) => {
+            const isActive = button.dataset.target === targetId;
+            button.classList.toggle("bg-slate-800", isActive);
+            button.classList.toggle("text-slate-100", isActive);
+            button.classList.toggle("text-slate-300", !isActive);
+          });
+        }
+
+        function addTask(event) {
+          event.preventDefault();
+          const name = document.getElementById("taskName").value.trim();
+          const priority = document.getElementById("taskPriority").value;
+          const dueDate = document.getElementById("taskDueDate").value;
+          if (!name || !priority || !dueDate) return;
+
+          const id =
+            typeof crypto !== "undefined" && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `task-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+          const newTask = {
+            id,
+            name,
+            priority,
+            dueDate,
+            status: "Future",
+            completionDate: null,
+          };
+
+          tasks.push(newTask);
+          refreshViews();
+          event.target.reset();
+          switchView("futureView");
+        }
+
+        function handleTaskAction(event) {
+          const button = event.target.closest("button[data-action]");
+          if (!button) return;
+          const taskId = button.dataset.id;
+          const action = button.dataset.action;
+          const task = tasks.find((t) => t.id === taskId);
+          if (!task) return;
+
+          if (action === "complete") {
+            task.status = "Complete";
+            task.completionDate = new Date().toISOString().split("T")[0];
+          }
+
+          if (action === "delete") {
+            task.status = "Deleted";
+            task.completionDate =
+              task.completionDate ?? new Date().toISOString().split("T")[0];
+          }
+
+          refreshViews();
+        }
+
+        function addChatBubble(role, text) {
+          const bubble = document.createElement("div");
+          const isUser = role === "user";
+          bubble.className = [
+            "max-w-[90%] rounded-xl px-4 py-3 border text-sm leading-relaxed",
+            isUser
+              ? "ml-auto bg-emerald-500/10 border-emerald-500/40 text-emerald-100"
+              : "mr-auto bg-slate-800/60 border-slate-700 text-slate-100",
+          ].join(" ");
+          bubble.textContent = text;
+          chatMessages.appendChild(bubble);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function queryAdvisor(userMessage) {
+          const futureTasks = sortFutureTasks(
+            tasks.filter((task) => task.status === "Future")
+          );
+
+          const taskContext = futureTasks.length
+            ? futureTasks
+                .map(
+                  (task, idx) =>
+                    `${idx + 1}. ${task.name} — Priority ${task.priority}, Due ${task.dueDate}`
+                )
+                .join("\n")
+            : "No active tasks.";
+
+          const prompt =
+            "Here are your current active tasks:\n" +
+            taskContext +
+            "\n\nUser question: " +
+            userMessage +
+            "\n\nRemember: Only reference the tasks provided. If no tasks exist, ask the user to add one.";
+
+          const payload = {
+            systemInstruction: {
+              role: "system",
+              parts: [
+                {
+                  text:
+                    "You are a personal task coach for a computer science student. Only discuss tasks that are currently provided in the active task list. Ask clarifying questions when needed to help them choose the next task.",
+                },
+              ],
+            },
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: prompt }],
+              },
+            ],
+          };
+
+          if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_GEMINI_API_KEY") {
+            throw new Error(
+              "Gemini API key is missing. Update GEMINI_API_KEY in the source."
+            );
+          }
+
+          const response = await fetch(`${GEMINI_ENDPOINT}?key=${GEMINI_API_KEY}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Gemini API error: ${errorText}`);
+          }
+
+          const data = await response.json();
+          const output =
+            data?.candidates?.[0]?.content?.parts?.map((part) => part.text).join("\n") ??
+            "I couldn't generate a response. Please try again.";
+          return output.trim();
+        }
+
+        async function handleChatSubmit(event) {
+          event.preventDefault();
+          const message = chatInput.value.trim();
+          if (!message) return;
+          addChatBubble("user", message);
+          chatInput.value = "";
+
+          addChatBubble("assistant", "Thinking...");
+          const thinkingBubble = chatMessages.lastElementChild;
+
+          try {
+            const reply = await queryAdvisor(message);
+            thinkingBubble.textContent = reply;
+          } catch (error) {
+            thinkingBubble.textContent = error.message;
+          }
+        }
+
+        function initNav() {
+          navButtons.forEach((button) => {
+            button.addEventListener("click", () => switchView(button.dataset.target));
+          });
+        }
+
+        function initForms() {
+          document.getElementById("taskForm").addEventListener("submit", addTask);
+          futureList.addEventListener("click", handleTaskAction);
+          historyList.addEventListener("click", handleTaskAction);
+          chatForm.addEventListener("submit", handleChatSubmit);
+          chatInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              chatForm.dispatchEvent(new Event("submit", { cancelable: true }));
+            }
+          });
+        }
+
+        function init() {
+          loadTasks();
+          refreshViews();
+          initNav();
+          initForms();
+          switchView("addTaskView");
+        }
+
+        document.addEventListener("DOMContentLoaded", init);
+      })();
+    </script>
+  </body>
+</html>
+
