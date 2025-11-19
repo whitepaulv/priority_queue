@@ -1,2 +1,8 @@
 # priority_queue
-A small project I made using AI to manage my daily tasks. Not impressive to employers or other technical students, but I use it to manage my work
+
+Below is the timeline of the features I added and when they were added:
+
+11/19/25:
+- Added first commit
+- Extremely basic HTML script
+- Have no current plan for where the project will go
