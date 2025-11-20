@@ -28,4 +28,9 @@ Below is the timeline of the features I added and when they were added:
 
 11/20/25 at 11:50 AM:
 - Made final changes before moving frontend to React
+
+11/20/24 at 1:31 PM:
+- Moved frontend over to React
+- Created Supabase backend and local storage
+- Intend to finish Supabase account authentication later today
   
