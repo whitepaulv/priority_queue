@@ -20,4 +20,9 @@ Below is the timeline of the features I added and when they were added:
 - Added AI chatbot functionality
 - Added history screen
 - Fixed bugs such as checked tasks not moving to other screens when other boxes are checked before original box moves
+
+11/20/25 at 10:21 AM:
+- Added color to make UI more appealing
+- Added 3 ways to sort the tasks
+- Slightly improved UI
   
