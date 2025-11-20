@@ -5,8 +5,8 @@
 
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import ErrorBoundary from './ErrorBoundary.jsx'
+import App from './components/App'
+import ErrorBoundary from './ErrorBoundary'
 import './index.css'
 
 // Check if root element exists
@@ -18,7 +18,7 @@ if (!rootElement) {
 
 try {
   const root = ReactDOM.createRoot(rootElement)
-  
+
   root.render(
     <React.StrictMode>
       <ErrorBoundary>
@@ -32,7 +32,7 @@ try {
     rootElement.innerHTML = `
       <div style="padding: 2rem; text-align: center; background: red; color: white;">
         <h1>Failed to load app</h1>
-        <p>${error.message}</p>
+        <p>${error instanceof Error ? error.message : 'Unknown error'}</p>
         <p>Check the console for details.</p>
       </div>
     `
