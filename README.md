@@ -25,4 +25,7 @@ Below is the timeline of the features I added and when they were added:
 - Added color to make UI more appealing
 - Added 3 ways to sort the tasks
 - Slightly improved UI
+
+11/20/25 at 11:50 AM:
+- Made final changes before moving frontend to React
   
