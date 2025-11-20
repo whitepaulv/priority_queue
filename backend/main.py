@@ -8,6 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.routes import router
 from database.connection import init_db
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(
     title="PriorityForge API",

@@ -80,3 +80,15 @@ class TaskWithHistory(TaskResponse):
     class Config:
         from_attributes = True
 
+class ChatMessage(BaseModel):
+    """Schema for chat message."""
+    message: str = Field(..., min_length=1, max_length=1000, description="User message to the AI assistant")
+
+class ChatResponse(BaseModel):
+    """Schema for chat response."""
+    response: str = Field(..., description="AI assistant's response")
+
+class TaskActionRequest(BaseModel):
+    """Schema for task action requests (create/complete)."""
+    task_title: Optional[str] = Field(None, description="Title of the task")
+

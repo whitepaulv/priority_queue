@@ -6,9 +6,10 @@ RESTful endpoints for task management and priority queue operations.
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from sqlalchemy.orm import Session
-from api.schemas import TaskCreate, TaskResponse, TaskUpdate
+from api.schemas import TaskCreate, TaskResponse, TaskUpdate, ChatMessage, ChatResponse, TaskActionRequest
 from api.dependencies import get_database_session
 from services.task_service import TaskService
+from services.ai_service import AIService
 
 router = APIRouter()
 
@@ -112,4 +113,82 @@ def toggle_task_complete(task_id: int, db: Session = Depends(get_database_sessio
 def prioritize_tasks():
     """Reprioritize all tasks using the priority queue engine."""
     return {"message": "Prioritization not yet implemented"}
+
+@router.post("/assistant/chat", response_model=ChatResponse)
+def chat_with_assistant(chat_msg: ChatMessage, db: Session = Depends(get_database_session)):
+    """Chat with the AI assistant."""
+    try:
+        # Get current tasks for context
+        task_service = TaskService(db)
+        tasks = task_service.get_all_tasks()
+        
+        # Initialize AI service and get response
+        ai_service = AIService()
+        response_text = ai_service.chat(chat_msg.message, tasks)
+        
+        return ChatResponse(response=response_text)
+    except ValueError as e:
+        # API key not configured
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="AI assistant is not configured. Please add GEMINI_API_KEY to your .env file and restart the server.")
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in chat endpoint:\n{error_trace}")
+        # Return the error message from the AI service (which already handles it)
+        # If it's a different error, provide details
+        error_msg = str(e)
+        raise HTTPException(status_code=500, detail=f"Error: {error_msg}")
+
+@router.post("/assistant/on-task-created", response_model=ChatResponse)
+def on_task_created(request: TaskActionRequest = TaskActionRequest(task_title=None), db: Session = Depends(get_database_session)):
+    """Get an encouraging message when a task is created."""
+    try:
+        ai_service = AIService()
+        response_text = ai_service.get_motivational_message(request.task_title)
+        return ChatResponse(response=response_text)
+    except ValueError as e:
+        # API key not configured - return default message
+        return ChatResponse(response="Great! You're making progress.")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        # Return default message on error
+        return ChatResponse(response="Great! Keep up the good work!")
+
+@router.post("/assistant/on-task-completed", response_model=ChatResponse)
+def on_task_completed(request: TaskActionRequest = TaskActionRequest(task_title=None), db: Session = Depends(get_database_session)):
+    """Get a congratulatory message when a task is completed."""
+    try:
+        ai_service = AIService()
+        task_title = request.task_title
+        # Use a different prompt for completion
+        if task_title:
+            prompt = f"""Generate a short, congratulatory message for someone who just completed a task called '{task_title}'. 
+Tone: Lighthearted, happy, encouraging.
+Length: Short and to the point (1-2 sentences max).
+Format: No emojis. Use exclamation points after each sentence (unless the sentence is a question).
+Style: Encouraging.
+Content: 100% focused on the task '{task_title}'. Nothing else should be mentioned.
+Example: "Woohoo! {task_title} is complete! Well done!" """
+        else:
+            prompt = """Generate a short, congratulatory message for someone who just completed a task. 
+Tone: Lighthearted, happy, encouraging.
+Length: Short and to the point (1-2 sentences max).
+Format: No emojis. Use exclamation points after each sentence (unless the sentence is a question).
+Style: Encouraging.
+Content: 100% focused on the task. Nothing else should be mentioned."""
+        
+        response = ai_service.model.generate_content(prompt)
+        response_text = response.text.strip() if response and response.text else f"Woohoo! {task_title if task_title else 'Your task'} is complete! Well done!"
+        return ChatResponse(response=response_text)
+    except ValueError as e:
+        # API key not configured - return default message
+        return ChatResponse(response=f"Woohoo! {task_title if task_title else 'Your task'} is complete! Well done!")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        # Return default message on error
+        return ChatResponse(response=f"Woohoo! {task_title if task_title else 'Your task'} is complete! Well done!")
 
