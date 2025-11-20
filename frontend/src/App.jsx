@@ -33,6 +33,7 @@ function App() {
   const [currentView, setCurrentView] = useState('active') // 'active' or 'history'
   const [pendingTransitions, setPendingTransitions] = useState(new Map()) // taskId -> { timeoutId, intendedState }
   const pendingTransitionsRef = useRef(new Map()) // Ref to track current pending transitions
+  const [sortBy, setSortBy] = useState('difficulty') // 'difficulty', 'urgency', 'due_date'
 
   // Fetch tasks from API
   useEffect(() => {
@@ -579,6 +580,24 @@ function App() {
     return 'rgba(255, 255, 255, 0.04)'
   }
 
+  const getUrgencyBorderColor = (urgency) => {
+    // Get border color based on urgency level
+    switch (urgency) {
+      case 1:
+        return '#2d5016' // dark green
+      case 2:
+        return '#5a9a3a' // light green
+      case 3:
+        return '#e6c200' // yellow
+      case 4:
+        return '#e67e7e' // light red
+      case 5:
+        return '#8b0000' // dark red
+      default:
+        return '#e6c200' // default to yellow
+    }
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -602,7 +621,7 @@ function App() {
                   setEditingTaskId(null)
                 }}
               >
-                tasks
+                activeTasks
               </button>
               <button 
                 className={`view-tab ${currentView === 'history' ? 'active' : ''}`}
@@ -616,12 +635,26 @@ function App() {
               </button>
             </div>
             {currentView === 'active' && (
-              <button 
-                className="btn btn-primary" 
-                onClick={() => setShowCreateForm(!showCreateForm)}
-              >
-                {showCreateForm ? 'cancel' : 'NEW'}
-              </button>
+              <div className="header-actions">
+                <div className="sort-dropdown-wrapper">
+                  <span className="sort-label">sort:</span>
+                  <select
+                    className="sort-dropdown"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="difficulty">difficulty</option>
+                    <option value="urgency">urgency</option>
+                    <option value="due_date">dueDate</option>
+                  </select>
+                </div>
+                <button 
+                  className="btn btn-primary" 
+                  onClick={() => setShowCreateForm(!showCreateForm)}
+                >
+                  {showCreateForm ? 'cancel' : 'new'}
+                </button>
+              </div>
             )}
           </div>
 
@@ -751,9 +784,30 @@ function App() {
                 }
               })
               
-              console.log(`Filtered tasks for ${currentView}:`, filteredTasks.map(t => ({ id: t.id, title: t.title, completed: t.completed })))
+              // Sort tasks based on sortBy selection
+              let sortedTasks = [...filteredTasks]
+              sortedTasks.sort((a, b) => {
+                if (sortBy === 'difficulty') {
+                  // Sort by difficulty (higher first)
+                  return (b.difficulty || 0) - (a.difficulty || 0)
+                } else if (sortBy === 'urgency') {
+                  // Sort by urgency (higher first)
+                  return (b.urgency || 0) - (a.urgency || 0)
+                } else if (sortBy === 'due_date') {
+                  // Sort by due date (sooner first, then tasks without due dates)
+                  if (!a.due_date && !b.due_date) return 0
+                  if (!a.due_date) return 1 // Tasks without due dates go to end
+                  if (!b.due_date) return -1
+                  const dateA = new Date(a.due_date)
+                  const dateB = new Date(b.due_date)
+                  return dateA - dateB // Sooner dates first
+                }
+                return 0
+              })
               
-              if (filteredTasks.length === 0) {
+              console.log(`Filtered tasks for ${currentView}:`, sortedTasks.map(t => ({ id: t.id, title: t.title, completed: t.completed })))
+              
+              if (sortedTasks.length === 0) {
                 return (
                   <div className="empty-state">
                     <div className="empty-icon">—</div>
@@ -765,7 +819,7 @@ function App() {
               
               return (
                 <div className="tasks-grid">
-                  {filteredTasks.map(task => {
+                  {sortedTasks.map(task => {
                     const pending = pendingTransitions.get(task.id)
                     // If there's a pending transition, use the intended state for styling
                     // Otherwise, use the actual completed state
@@ -776,7 +830,13 @@ function App() {
                       : ''
                     
                     return (
-                  <div key={task.id} className={`task-card ${displayAsCompleted ? 'task-completed' : ''} ${pendingClass}`}>
+                  <div 
+                    key={task.id} 
+                    className={`task-card task-urgency-${task.urgency || 3} ${displayAsCompleted ? 'task-completed' : ''} ${pendingClass}`}
+                    style={{ 
+                      '--urgency-color': getUrgencyBorderColor(task.urgency || 3)
+                    }}
+                  >
                     <div 
                       className="task-priority-indicator"
                       style={{ backgroundColor: getPriorityColor(task.urgency || 3, task.difficulty || 3) }}
@@ -863,9 +923,6 @@ function App() {
                             />
                             <h3 className="task-title">{task.title}</h3>
                           </div>
-                          {task.description && (
-                            <p className="task-description">{task.description}</p>
-                          )}
                           <div className="task-meta">
                             <span className="task-badge">
                               urg:{task.urgency || 'N/A'}
@@ -884,6 +941,9 @@ function App() {
                               </span>
                             )}
                           </div>
+                          {task.description && (
+                            <p className="task-description">{task.description}</p>
+                          )}
                         </div>
                         {currentView === 'active' && (
                           <div className="task-actions">
