@@ -6,7 +6,6 @@ Business logic for task management operations.
 from typing import List, Optional
 from sqlalchemy.orm import Session
 from models.task import Task
-from priority_queue.engine import PriorityQueueEngine
 from priority_queue.algorithms import DefaultPriorityAlgorithm
 
 class TaskService:
@@ -23,7 +22,6 @@ class TaskService:
             db: Database session
         """
         self.db = db
-        self.priority_engine = PriorityQueueEngine()
     
     def create_task(self, task_data: dict) -> Task:
         """
@@ -37,8 +35,8 @@ class TaskService:
         """
         task = Task(**task_data)
         
-        # Calculate initial priority
-        task.priority_score = DefaultPriorityAlgorithm.calculate_priority(task)
+        # Note: Priority score calculation can be added later
+        # For now, tasks are created with default values
         
         self.db.add(task)
         self.db.commit()
@@ -87,8 +85,9 @@ class TaskService:
             setattr(task, key, value)
         
         # Recalculate priority if relevant fields changed
-        if any(key in task_data for key in ["is_urgent", "is_important", "due_date"]):
-            task.priority_score = DefaultPriorityAlgorithm.calculate_priority(task)
+        if any(key in task_data for key in ["urgency", "difficulty"]):
+            # Priority calculation can be added here if needed
+            pass
         
         self.db.commit()
         self.db.refresh(task)

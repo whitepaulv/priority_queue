@@ -10,19 +10,14 @@ import ErrorBoundary from './ErrorBoundary.jsx'
 import './index.css'
 
 // Check if root element exists
-console.log('Starting React app initialization...')
 const rootElement = document.getElementById('root')
-console.log('Root element:', rootElement)
 
 if (!rootElement) {
-  console.error('Root element not found!')
   throw new Error('Root element not found!')
 }
 
 try {
-  console.log('Creating React root...')
   const root = ReactDOM.createRoot(rootElement)
-  console.log('React root created, rendering...')
   
   root.render(
     <React.StrictMode>
@@ -31,8 +26,6 @@ try {
       </ErrorBoundary>
     </React.StrictMode>,
   )
-  
-  console.log('React app rendered successfully!')
 } catch (error) {
   console.error('Failed to render app:', error)
   if (rootElement) {

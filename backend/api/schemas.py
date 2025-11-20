@@ -13,7 +13,7 @@ class TaskBase(BaseModel):
     description: Optional[str] = None
     urgency: int = Field(default=3, ge=1, le=5, description="Urgency level from 1-5")
     difficulty: int = Field(default=3, ge=1, le=5, description="Difficulty level from 1-5")
-    estimated_time: int = Field(default=0, ge=0, description="Estimated time in minutes")
+    due_date: Optional[datetime] = None
     completed: bool = Field(default=False, description="Task completion status")
     
     @field_validator('urgency', 'difficulty')
@@ -34,7 +34,7 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     urgency: Optional[int] = Field(None, ge=1, le=5, description="Urgency level from 1-5")
     difficulty: Optional[int] = Field(None, ge=1, le=5, description="Difficulty level from 1-5")
-    estimated_time: Optional[int] = Field(None, ge=0, description="Estimated time in minutes")
+    due_date: Optional[datetime] = None
     completed: Optional[bool] = None
     
     @field_validator('urgency', 'difficulty')

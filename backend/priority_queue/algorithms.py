@@ -44,31 +44,17 @@ class PriorityAlgorithm:
 class DefaultPriorityAlgorithm(PriorityAlgorithm):
     """
     Default priority algorithm.
-    Simple algorithm based on urgency and importance.
+    Simple algorithm based on urgency and difficulty.
     """
     
     @staticmethod
     def calculate_priority(task: Task) -> float:
-        """Calculate priority using urgency and importance."""
-        base_score = 0.0
-        
-        # Urgency multiplier
-        if task.is_urgent:
-            base_score += 50.0
-        
-        # Importance multiplier
-        if task.is_important:
-            base_score += 30.0
-        
-        # Due date factor
-        if task.due_date:
-            days_until_due = (task.due_date - datetime.utcnow()).days
-            if days_until_due < 0:
-                base_score += 100.0  # Overdue tasks
-            elif days_until_due <= 1:
-                base_score += 40.0
-            elif days_until_due <= 3:
-                base_score += 20.0
+        """Calculate priority using urgency and difficulty."""
+        # Simple weighted calculation: urgency * 0.6 + difficulty * 0.4
+        # Scale to 0-100 range
+        urgency_score = (task.urgency / 5.0) * 60.0
+        difficulty_score = (task.difficulty / 5.0) * 40.0
+        base_score = urgency_score + difficulty_score
         
         return base_score
 

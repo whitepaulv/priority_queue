@@ -19,7 +19,7 @@ class Task(BaseModel):
     description = Column(Text, nullable=True)
     urgency = Column(Integer, nullable=False, default=3)
     difficulty = Column(Integer, nullable=False, default=3)
-    estimated_time = Column(Integer, nullable=False, default=0)  # Time in minutes
+    due_date = Column(DateTime, nullable=True)
     completed = Column(Boolean, nullable=False, default=False, index=True)
     
     # Relationships
@@ -29,7 +29,6 @@ class Task(BaseModel):
     __table_args__ = (
         CheckConstraint('urgency >= 1 AND urgency <= 5', name='check_urgency_range'),
         CheckConstraint('difficulty >= 1 AND difficulty <= 5', name='check_difficulty_range'),
-        CheckConstraint('estimated_time >= 0', name='check_estimated_time_positive'),
     )
     
     def __repr__(self):
